@@ -1,17 +1,18 @@
 from fastapi import FastAPI
 from app.database import Base,engine
 from app import models
+from app.routes import users
 
 
 app = FastAPI()
 
-print("Dropping and recreating tables...")
-Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
-print("Tables recreated!")
+
 @app.get("/")
 def read_root():
     return {"message": "FastAPI is running with PostgreSQL"}
+
+app.include_router(users.router, prefix="/users", tags=["Users"])
 
 
 try:
