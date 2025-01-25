@@ -1,0 +1,55 @@
+# Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+*.log.*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE/Editor-specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# Migrations
+**/migrations/
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+
+# Docker
+*.pid
+.dockerignore
+
+# Other temporary files
+*.bak
+*.tmp
+*.old
