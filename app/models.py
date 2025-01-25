@@ -25,7 +25,6 @@ class Genre(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
-    books = relationship("Book", back_populates="genre")
 
 class City(Base):
     __tablename__ = "cities"
@@ -40,10 +39,6 @@ class Book(Base):
     title = Column(String, nullable=False)
     isbn = Column(String, unique=True, nullable=False)
     price = Column(Float, nullable=False)
-    genre_id = Column(Integer, ForeignKey("genres.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     description = Column(String)
     units = Column(Integer, nullable=False)
-
-    genre = relationship("Genre", back_populates="books")
-    author = relationship("User", back_populates="books")

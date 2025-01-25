@@ -20,11 +20,24 @@ class UserResponse(UserBase):
     class Config:
         orm_mode = True
 
+class GenreResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+class CityResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
 class BookBase(BaseModel):
     title: str
     isbn: str
     price: float
-    genre_id: int
     description: Optional[str] = None
     units: int
 
