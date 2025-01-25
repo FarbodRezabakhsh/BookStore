@@ -19,3 +19,29 @@ class UserResponse(UserBase):
 
     class Config:
         orm_mode = True
+
+class BookBase(BaseModel):
+    title: str
+    isbn: str
+    price: float
+    genre_id: int
+    description: Optional[str] = None
+    units: int
+
+class BookCreate(BookBase):
+    author_id: int
+
+class BookUpdate(BaseModel):
+    title: Optional[str] = None
+    isbn: Optional[str] = None
+    price: Optional[float] = None
+    genre_id: Optional[int] = None
+    description: Optional[str] = None
+    units: Optional[int] = None
+
+class BookResponse(BookBase):
+    id: int
+    author_id: int
+
+    class Config:
+        orm_mode = True
