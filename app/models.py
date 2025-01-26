@@ -42,3 +42,15 @@ class Book(Base):
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     description = Column(String)
     units = Column(Integer, nullable=False)
+
+class Author(Base):
+    __tablename__ = "authors"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    city = Column(Integer, ForeignKey('cities.id'), nullable=False)
+    goodreads_link = Column(String, nullable=True)
+    bank_account_number = Column(String, nullable=True)
+
+    user = relationship("User", back_populates="author_profile")
+    city = relationship("City")
+    books = relationship("Book", secondary="author_book", back_populates="authors") # many to many relationship
