@@ -1,5 +1,5 @@
 from pydantic import BaseModel,EmailStr
-from typing import Optional
+from typing import Optional,List
 
 class UserBase(BaseModel):
     username: str
@@ -55,6 +55,27 @@ class BookUpdate(BaseModel):
 class BookResponse(BookBase):
     id: int
     author_id: int
+
+    class Config:
+        orm_mode = True
+
+class AuthorBase(BaseModel):
+    user_id: int
+    city_id: int
+    goodreads_link: Optional[str] = None
+    bank_account_number: Optional[str] = None
+
+class AuthorCreate(AuthorBase):
+    pass
+
+class AuthorUpdate(BaseModel):
+    city_id: Optional[int] = None
+    goodreads_link: Optional[str] = None
+    bank_account_number: Optional[str] = None
+
+class AuthorResponse(AuthorBase):
+    id: int
+    books: Optional[List[int]] = []  # Book IDs authored by this author
 
     class Config:
         orm_mode = True
