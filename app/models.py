@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey
+from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey,Table
 from app.database import Base
 from sqlalchemy.orm import relationship
 import enum
@@ -20,6 +20,8 @@ class User(Base):
     password = Column(String, nullable=False)
     user_role = Column(Enum(UserRole), default=UserRole.CUSTOMER)
 
+    author_profile = relationship("Author", back_populates="user", uselist=False)
+
 class Genre(Base):
     __tablename__ = "genres"
 
@@ -32,6 +34,13 @@ class City(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
 
+author_book = Table(
+    "author_book",
+    Base.metadata,
+    Column("author_id", Integer, ForeignKey("authors.id"), primary_key=True),
+    Column("book_id", Integer, ForeignKey("books.id"), primary_key=True)
+)
+
 class Book(Base):
     __tablename__ = "books"
 
@@ -39,15 +48,17 @@ class Book(Base):
     title = Column(String, nullable=False)
     isbn = Column(String, unique=True, nullable=False)
     price = Column(Float, nullable=False)
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("authors.id"), nullable=False)
     description = Column(String)
     units = Column(Integer, nullable=False)
+
+    authors = relationship("Author", secondary="author_book", back_populates="books")
 
 class Author(Base):
     __tablename__ = "authors"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    city = Column(Integer, ForeignKey('cities.id'), nullable=False)
+    city_id = Column(Integer, ForeignKey('cities.id'), nullable=False)
     goodreads_link = Column(String, nullable=True)
     bank_account_number = Column(String, nullable=True)
 
