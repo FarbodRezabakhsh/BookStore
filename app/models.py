@@ -37,8 +37,8 @@ class City(Base):
 author_book = Table(
     "author_book",
     Base.metadata,
-    Column("author_id", Integer, ForeignKey("authors.id"), primary_key=True),
-    Column("book_id", Integer, ForeignKey("books.id"), primary_key=True)
+    Column("author_id", Integer, ForeignKey("authors.id",ondelete='CASCADE'), primary_key=True),
+    Column("book_id", Integer, ForeignKey("books.id",ondelete='CASCADE'), primary_key=True)
 )
 
 class Book(Base):
@@ -48,7 +48,7 @@ class Book(Base):
     title = Column(String, nullable=False)
     isbn = Column(String, unique=True, nullable=False)
     price = Column(Float, nullable=False)
-    author_id = Column(Integer, ForeignKey("authors.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("authors.id",ondelete="CASCADE"), nullable=False)
     description = Column(String)
     units = Column(Integer, nullable=False)
 
@@ -57,8 +57,8 @@ class Book(Base):
 class Author(Base):
     __tablename__ = "authors"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    city_id = Column(Integer, ForeignKey('cities.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id',ondelete='CASCADE'), nullable=False)
+    city_id = Column(Integer, ForeignKey('cities.id',ondelete="SET NULL"), nullable=False)
     goodreads_link = Column(String, nullable=True)
     bank_account_number = Column(String, nullable=True)
 
