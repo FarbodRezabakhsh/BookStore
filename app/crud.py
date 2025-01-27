@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
-from app.models import User,Book,Author,Reservation
-from app.schemas import UserCreate,BookCreate,BookUpdate,AuthorCreate,AuthorUpdate,ReservationCreate,ReservationUpdate
+from app.models import User,Book,Author,Reservation,Customer
+from app.schemas import UserCreate, BookCreate, BookUpdate, AuthorCreate, AuthorUpdate, ReservationCreate, \
+    ReservationUpdate, CustomerCreate, CustomerUpdate
+CustomerUpdate
 
 def get_user_id(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
@@ -143,3 +145,34 @@ def delete_reservation(db: Session, reservation_id: int):
         db.delete(db_reservation)
         db.commit()
     return db_reservation
+
+#CRUD operations CUSTOMER
+def get_customer(db: Session, customer_id: int):
+    return db.query(Customer).filter(Customer.id == customer_id).first()
+
+def get_customers(db: Session, skip: int = 0, limit: int = 10):
+    return db.query(Customer).offset(skip).limit(limit).all()
+
+def create_customer(db: Session, customer: CustomerCreate):
+    db_customer = Customer(**customer.dict())
+    db.add(db_customer)
+    db.commit()
+    db.refresh(db_customer)
+    return db_customer
+
+def update_customer(db: Session,customer_id:int, updates:CustomerUpdate):
+    db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not db_customer:
+        return None
+    for key, value in updates.dict(exclude_unset=True).items():
+        setattr(db_customer, key, value)
+    db.commit()
+    db.refresh(db_customer)
+    return db_customer
+
+def delete_customer(db: Session, customer_id: int):
+    db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if db_customer:
+        db.delete(db_customer)
+        db.commit()
+    return db_customer
