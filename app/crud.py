@@ -108,3 +108,38 @@ def delete_author(db: Session, author_id: int):
     db.commit()
     return f'{db_author} deleted successfully'
 
+def get_reservation(db: Session, reservation_id: int):
+    return db.query(Reservation).filter(Reservation.id == reservation_id).first()
+
+def get_reservations(db: Session, skip: int = 0, limit: int = 10):
+    return db.query(Reservation).offset(skip).limit(limit).all()
+
+def create_reservation(db: Session, reservation: ReservationCreate):
+    db_reservation = Reservation(
+        customer_id=reservation.customer_id,
+        book_id=reservation.book_id,
+        start_date=reservation.start_date,
+        end_date=reservation.end_date,
+        price=reservation.price
+    )
+    db.add(db_reservation)
+    db.commit()
+    db.refresh(db_reservation)
+    return db_reservation
+
+def update_reservation(db: Session, reservation_id: int, reservation: ReservationUpdate):
+    db_reservation = db.query(Reservation).filter(Reservation.id == reservation_id).first()
+    if not db_reservation:
+        return None
+    for key, value in reservation.dict(exclude_unset=True).items():
+        setattr(db_reservation, key, value)
+    db.commit()
+    db.refresh(db_reservation)
+    return db_reservation
+
+def delete_reservation(db: Session, reservation_id: int):
+    db_reservation = db.query(Reservation).filter(Reservation.id == reservation_id).first()
+    if db_reservation:
+        db.delete(db_reservation)
+        db.commit()
+    return db_reservation

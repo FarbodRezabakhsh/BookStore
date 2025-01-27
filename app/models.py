@@ -21,6 +21,7 @@ class User(Base):
     user_role = Column(String, default=UserRole.CUSTOMER.value,nullable=False)
 
     author_profile = relationship("Author", back_populates="user", uselist=False)
+    customer_profile = relationship("Customer", back_populates="user", uselist=False)
 
 class Genre(Base):
     __tablename__ = "genres"
@@ -83,3 +84,19 @@ class Reservation(Base):
 
     customer = relationship("User")
     book = relationship("Book")
+
+class SubscriptionModel(enum.Enum):
+    FREE = "free"
+    PLUS = "plus"
+    PREMIUM = "premium"
+
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    subscription_model = Column(String, nullable=False, default=SubscriptionModel.FREE.value)
+    subscription_end_time = Column(Date, nullable=True)
+    wallet_money_amount = Column(Float, nullable=False, default=0.0)
+
+    user = relationship("User", back_populates="customer_profile")
