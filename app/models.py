@@ -67,12 +67,6 @@ class Author(Base):
     city = relationship("City")
     books = relationship("Book", secondary="author_book", back_populates="authors") # many to many relationship
 
-class Customer(Base):
-    __tablename__ = "customers"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id',ondelete='CASCADE'), nullable=False)
-    Subscription_model = Column(String, nullable=False)
-
 class Reservation(Base):
     __tablename__ = "reservations"
     id = Column(Integer, primary_key=True, index=True)
