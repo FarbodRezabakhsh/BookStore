@@ -101,3 +101,24 @@ class ReservationResponse(ReservationBase):
 
     class Config:
         orm_mode = True
+
+# Customer schema
+class CustomerBase(BaseModel):
+    user_id: int
+    subscription_model: str = "free"
+    subscription_end_time: Optional[date] = None
+    wallet_money_amount: float = 0.0
+
+class CustomerCreate(CustomerBase):
+    pass
+
+class CustomerUpdate(BaseModel):
+    subscription_model: Optional[str] = None
+    subscription_end_time: Optional[date] = None
+    wallet_money_amount: Optional[float] = None
+
+class CustomerResponse(CustomerBase):
+    id: int
+
+    class Config:
+        orm_mode = True
