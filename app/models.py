@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey,Table
+from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey,Table,Date
 from app.database import Base
 from sqlalchemy.orm import relationship
 import enum
@@ -18,7 +18,7 @@ class User(Base):
     phone = Column(String, unique=True, nullable=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
-    user_role = Column(Enum(UserRole), default=UserRole.CUSTOMER)
+    user_role = Column(String, default=UserRole.CUSTOMER.value,nullable=False)
 
     author_profile = relationship("Author", back_populates="user", uselist=False)
 
@@ -37,8 +37,8 @@ class City(Base):
 author_book = Table(
     "author_book",
     Base.metadata,
-    Column("author_id", Integer, ForeignKey("authors.id"), primary_key=True),
-    Column("book_id", Integer, ForeignKey("books.id"), primary_key=True)
+    Column("author_id", Integer, ForeignKey("authors.id",ondelete='CASCADE'), primary_key=True),
+    Column("book_id", Integer, ForeignKey("books.id",ondelete='CASCADE'), primary_key=True)
 )
 
 class Book(Base):
@@ -48,7 +48,7 @@ class Book(Base):
     title = Column(String, nullable=False)
     isbn = Column(String, unique=True, nullable=False)
     price = Column(Float, nullable=False)
-    author_id = Column(Integer, ForeignKey("authors.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("authors.id",ondelete="CASCADE"), nullable=False)
     description = Column(String)
     units = Column(Integer, nullable=False)
 
@@ -57,11 +57,29 @@ class Book(Base):
 class Author(Base):
     __tablename__ = "authors"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    city_id = Column(Integer, ForeignKey('cities.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id',ondelete='CASCADE'), nullable=False)
+    city_id = Column(Integer, ForeignKey('cities.id',ondelete="SET NULL"), nullable=False)
     goodreads_link = Column(String, nullable=True)
     bank_account_number = Column(String, nullable=True)
 
     user = relationship("User", back_populates="author_profile")
     city = relationship("City")
     books = relationship("Book", secondary="author_book", back_populates="authors") # many to many relationship
+
+class Customer(Base):
+    __tablename__ = "customers"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id',ondelete='CASCADE'), nullable=False)
+    Subscription_model = Column(String, nullable=False)
+
+class Reservation(Base):
+    __tablename__ = "reservations"
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    price = Column(Float, nullable=False)
+
+    customer = relationship("User")
+    book = relationship("Book")

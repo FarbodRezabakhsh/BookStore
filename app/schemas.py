@@ -1,5 +1,6 @@
 from pydantic import BaseModel,EmailStr
-from typing import Optional
+from typing import Optional,List
+from datetime import date
 
 class UserBase(BaseModel):
     username: str
@@ -55,6 +56,48 @@ class BookUpdate(BaseModel):
 class BookResponse(BookBase):
     id: int
     author_id: int
+
+    class Config:
+        orm_mode = True
+
+class AuthorBase(BaseModel):
+    user_id: int
+    city_id: int
+    goodreads_link: Optional[str] = None
+    bank_account_number: Optional[str] = None
+
+class AuthorCreate(AuthorBase):
+    pass
+
+class AuthorUpdate(BaseModel):
+    city_id: Optional[int] = None
+    goodreads_link: Optional[str] = None
+    bank_account_number: Optional[str] = None
+
+class AuthorResponse(AuthorBase):
+    id: int
+    books: Optional[List[int]] = []  # Book IDs authored by this author
+
+    class Config:
+        orm_mode = True
+
+class ReservationBase(BaseModel):
+    customer_id: int
+    book_id: int
+    start_date: date
+    end_date: date
+    price: float
+
+class ReservationCreate(ReservationBase):
+    pass
+
+class ReservationUpdate(BaseModel):
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    price: Optional[float] = None
+
+class ReservationResponse(ReservationBase):
+    id: int
 
     class Config:
         orm_mode = True

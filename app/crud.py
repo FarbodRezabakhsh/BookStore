@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models import User,Book
-from app.schemas import UserCreate,BookCreate,BookUpdate
+from app.models import User,Book,Author,Reservation
+from app.schemas import UserCreate,BookCreate,BookUpdate,AuthorCreate,AuthorUpdate,ReservationCreate,ReservationUpdate
 
 def get_user_id(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
@@ -75,3 +75,36 @@ def delete_book(db: Session, book_id: int):
     db.delete(db_book)
     db.commit()
     return db_book
+
+
+def create_author(db: Session, author: AuthorCreate):
+    db_author = Author(**author.dict())
+    db.add(db_author)
+    db.commit()
+    db.refresh(db_author)
+    return db_author
+
+def get_all_authors(db: Session,skip:int=0,limit: int=10):
+    return db.query(Author).offset(skip).limit(limit).all()
+
+def get_author_by_id(db:Session,author_id:int):
+    return db.query(Author).filter(Author.id == author_id).first()
+
+def update_author(db: Session, author_id:int, updates:AuthorUpdate):
+    db_author = get_author_by_id(db, author_id)
+    if not db_author:
+        return None
+    for key, value in updates.dict(exclude_unset=True).items():
+        setattr(db_author, key, value)
+    db.commit()
+    db.refresh(db_author)
+    return db_author
+
+def delete_author(db: Session, author_id: int):
+    db_author = get_author_by_id(db, author_id)
+    if not db_author:
+        return None
+    db.delete(db_author)
+    db.commit()
+    return f'{db_author} deleted successfully'
+
