@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models import User,Book,Author
-from app.schemas import UserCreate,BookCreate,BookUpdate,AuthorCreate,AuthorUpdate
+from app.models import User,Book,Author,Reservation
+from app.schemas import UserCreate,BookCreate,BookUpdate,AuthorCreate,AuthorUpdate,ReservationCreate,ReservationUpdate
 
 def get_user_id(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
@@ -107,3 +107,4 @@ def delete_author(db: Session, author_id: int):
     db.delete(db_author)
     db.commit()
     return f'{db_author} deleted successfully'
+

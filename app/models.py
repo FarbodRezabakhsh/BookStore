@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey,Table
+from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey,Table,Date
 from app.database import Base
 from sqlalchemy.orm import relationship
 import enum
@@ -18,7 +18,7 @@ class User(Base):
     phone = Column(String, unique=True, nullable=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
-    user_role = Column(Enum(UserRole), default=UserRole.CUSTOMER)
+    user_role = Column(String, default=UserRole.CUSTOMER.value,nullable=False)
 
     author_profile = relationship("Author", back_populates="user", uselist=False)
 
@@ -65,3 +65,21 @@ class Author(Base):
     user = relationship("User", back_populates="author_profile")
     city = relationship("City")
     books = relationship("Book", secondary="author_book", back_populates="authors") # many to many relationship
+
+class Customer(Base):
+    __tablename__ = "customers"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id',ondelete='CASCADE'), nullable=False)
+    Subscription_model = Column(String, nullable=False)
+
+class Reservation(Base):
+    __tablename__ = "reservations"
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    price = Column(Float, nullable=False)
+
+    customer = relationship("User")
+    book = relationship("Book")
