@@ -4,7 +4,7 @@ from datetime import datetime,timedelta
 from jose import jwt,JWTError
 from passlib.context import CryptContext
 from typing import Optional
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
 
 
@@ -60,3 +60,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         )
 
     return payload["sub"]
+
+
+def check_user_role(current_user, allowed_roles: list[str]):
+    if current_user.user_role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have the required permissions to perform this action.",
+        )
