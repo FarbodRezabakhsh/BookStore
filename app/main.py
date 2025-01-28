@@ -3,7 +3,6 @@ from app.database import Base,engine
 from app import models
 from app.routes import users,books,authors,reservations,customers,auth
 
-
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)

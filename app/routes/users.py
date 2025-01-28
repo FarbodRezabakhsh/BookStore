@@ -56,7 +56,6 @@ def delete_user_endpoint(
             status_code=403,
             detail="You do not have permission to delete this user.",
         )
-
     # Proceed with deletion
     delete_user(db, user_id)
     return user

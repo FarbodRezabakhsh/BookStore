@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from typing import Optional
 from fastapi import Depends, HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
+import random
 
 
 load_dotenv()
@@ -68,3 +69,19 @@ def check_user_role(current_user, allowed_roles: list[str]):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have the required permissions to perform this action.",
         )
+
+def generate_otp():
+    return str(random.randint(100000,999999))
+
+otp_store = {}
+
+def save_otp(username: str, otp: str):
+    otp_store[username] = otp
+
+def get_saved_otp(username: str):
+    otp = otp_store.get(username)
+    return otp
+
+def clear_otp(username: str):
+    if username in otp_store:
+        del otp_store[username]
