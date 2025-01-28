@@ -4,6 +4,8 @@ from datetime import datetime,timedelta
 from jose import jwt,JWTError
 from passlib.context import CryptContext
 from typing import Optional
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 
 
 load_dotenv()
@@ -14,6 +16,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiration time
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -34,3 +37,26 @@ def decode_access_token(token: str):
         return payload
     except JWTError:
         return None
+
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    """
+    Validates the token and retrieves the current user's information.
+    """
+    try:
+        # Decode the token to retrieve its payload
+        payload = decode_access_token(token)
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials",
+        )
+
+    # Ensure the payload contains the 'sub' field (typically the username)
+    if not payload or "sub" not in payload:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials",
+        )
+
+    return payload["sub"]
