@@ -122,3 +122,36 @@ class CustomerResponse(CustomerBase):
 
     class Config:
         orm_mode = True
+
+# JWT schemas
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+class SignUp(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    user_role: Optional[str] = "CUSTOMER"
+
+class Login(BaseModel):
+    username: str
+    password: str
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "username": "root",
+                "password": "rootroot"
+            }
+        }
+
+    def validate_login(self):
+        if not self.username:
+            raise ValueError("Username must be provided")
