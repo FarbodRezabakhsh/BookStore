@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
 import random
 from app.database import get_db
-from app.models import Customer
+from app.models import Customer,User
 from sqlalchemy.orm import Session
 
 load_dotenv()
@@ -42,34 +42,36 @@ def decode_access_token(token: str):
         return None
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme),db: Session = Depends(get_db)):
     """
-    Validates the token and retrieves the current user's information.
+    Validates the token and retrieves the current User object.
     """
     try:
-        # Decode the token to retrieve its payload
+        # Decode JWT token
         payload = decode_access_token(token)
+        username = payload.get("sub")
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+        # Retrieve the full User object from the database
+        user = db.query(User).filter(User.username == username).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        return user
     except JWTError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authentication credentials",
-        )
-
-    # Ensure the payload contains the 'sub' field (typically the username)
-    if not payload or "sub" not in payload:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authentication credentials",
-        )
-
-    return payload["sub"]
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 
-def get_current_customer(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_customer(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
     """
     Retrieve the currently authenticated customer profile.
     """
-    current_user = get_current_user(token)  # Fetch authenticated user
+    # Pass db explicitly to get_current_user
+    current_user = get_current_user(token=token, db=db)
 
     # Check if the user has a customer profile
     customer = db.query(Customer).filter(Customer.user_id == current_user.id).first()
