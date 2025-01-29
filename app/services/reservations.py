@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from fastapi import HTTPException
-from app.models import Book, Reservation, Customer
+from app.models import Book, Reservation, Customer, ReservationQueue
 from app.schemas import ReservationCreate
 from app.core.membership_validation import check_membership_permissions
 
@@ -12,17 +12,15 @@ MEMBERSHIP_LIMITS = {
     "premium": {"max_days": 14, "max_books": 10, "price_per_day": 1000},
 }
 
-
 def reserve_book(db: Session, customer: Customer, reservation_data: ReservationCreate):
     """
     Handles book reservations:
     - Enforces membership-based limits.
     - Deducts money from wallet.
     - Checks book availability.
-    - If book is unavailable, queues the user.
+    - If the book is unavailable, queues the user.
     """
 
-    # Fetch the book from DB
     book = db.query(Book).filter(Book.id == reservation_data.book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
@@ -30,18 +28,12 @@ def reserve_book(db: Session, customer: Customer, reservation_data: ReservationC
     # Enforce membership permissions
     check_membership_permissions(customer, db)
 
-    # Convert membership to lowercase
-    membership = customer.subscription_model.lower()
-
     # Fetch membership limits
-    membership_rules = MEMBERSHIP_LIMITS.get(membership, None)
-
-    if membership_rules is None:
-        raise HTTPException(status_code=400, detail=f"Invalid membership type: {membership}")
+    membership = customer.subscription_model.lower()
+    membership_rules = MEMBERSHIP_LIMITS.get(membership)
 
     # Ensure the user does not exceed max reservations
-    active_reservations = db.query(Reservation).filter(Reservation.customer_id == customer.user_id).count()
-
+    active_reservations = db.query(Reservation).filter(Reservation.customer_id == customer.id).count()
     if active_reservations >= membership_rules["max_books"]:
         raise HTTPException(status_code=403, detail="You have reached your reservation limit.")
 
@@ -59,11 +51,11 @@ def reserve_book(db: Session, customer: Customer, reservation_data: ReservationC
     if customer.wallet_money_amount < total_price:
         raise HTTPException(status_code=400, detail="Insufficient funds. Please add money to your wallet.")
 
-    # If book has available units → Reserve immediately
+    # If the book has available units → Reserve immediately
     if book.units > 0:
         book.units -= 1  # Reduce available book units
         new_reservation = Reservation(
-            customer_id=customer.user_id,
+            customer_id=customer.id,  # FIXED: Correct Foreign Key Reference
             book_id=reservation_data.book_id,
             start_date=reservation_data.start_date,
             end_date=reservation_data.end_date,
@@ -76,8 +68,73 @@ def reserve_book(db: Session, customer: Customer, reservation_data: ReservationC
 
         db.commit()
         db.refresh(new_reservation)
-        print("DEBUG: Reservation successful!")  # Debugging log
         return new_reservation
 
-    # If book is unavailable, add to queue (Not yet implemented)
-    raise HTTPException(status_code=400, detail="No available units. Queue system not implemented yet.")
+    # If the book is unavailable → Add user to the queue
+    new_queue_entry = ReservationQueue(
+        customer_id=customer.id,  # FIXED: Correct Foreign Key Reference
+        book_id=reservation_data.book_id,
+        created_at=datetime.utcnow()
+    )
+    db.add(new_queue_entry)
+    db.commit()
+    return {"message": "Book is currently unavailable. You have been added to the waiting list."}
+
+def process_reservation_queue(db: Session, book_id: int):
+    """
+    Assigns a reserved book to the first user in the queue.
+    - Premium users get priority.
+    - If two users have the same level, the oldest request gets priority.
+    """
+
+    next_in_queue = (
+        db.query(ReservationQueue)
+        .join(Customer, ReservationQueue.customer_id == Customer.id)
+        .filter(ReservationQueue.book_id == book_id)
+        .order_by(
+            Customer.subscription_model.desc(),  # Premium users first
+            ReservationQueue.created_at.asc()  # Older requests get priority
+        )
+        .first()
+    )
+
+    if next_in_queue:
+        customer = db.query(Customer).filter(Customer.id == next_in_queue.customer_id).first()
+        book = db.query(Book).filter(Book.id == book_id).first()
+
+        price = MEMBERSHIP_LIMITS[customer.subscription_model]["price_per_day"] * 7
+        if customer.wallet_money_amount < price:
+            db.delete(next_in_queue)  # Remove from queue if the user cannot afford
+            db.commit()
+            return process_reservation_queue(db, book_id)  # Try the next person in line
+
+        # Assign reservation
+        book.units -= 1
+        new_reservation = Reservation(
+            customer_id=customer.id,  # FIXED: Correct Foreign Key Reference
+            book_id=book_id,
+            start_date=datetime.utcnow(),
+            end_date=datetime.utcnow() + timedelta(days=7),
+            price=price
+        )
+        db.add(new_reservation)
+        customer.wallet_money_amount -= price
+        db.delete(next_in_queue)  # Remove from queue
+        db.commit()
+        db.refresh(new_reservation)
+
+def return_book(db: Session, reservation_id: int):
+    """
+    Handles book return and assigns it to the next user in the queue if available.
+    """
+    reservation = db.query(Reservation).filter(Reservation.id == reservation_id).first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found.")
+
+    book = db.query(Book).filter(Book.id == reservation.book_id).first()
+    book.units += 1  # Increase available book count
+    db.delete(reservation)
+    db.commit()
+
+    # Check if someone is waiting in the queue
+    process_reservation_queue(db, book.id)

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey,Table,Da
 from app.database import Base
 from sqlalchemy.orm import relationship
 import enum
+from datetime import datetime
 
 class UserRole(enum.Enum):
     ADMIN = "admin"
@@ -94,3 +95,15 @@ class Customer(Base):
     wallet_money_amount = Column(Float, nullable=False, default=0.0)
 
     user = relationship("User", back_populates="customer_profile")
+
+
+class ReservationQueue(Base):
+    __tablename__ = "reservation_queue"
+
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(Date, default=datetime.utcnow, nullable=False)
+
+    customer = relationship("Customer")
+    book = relationship("Book")
