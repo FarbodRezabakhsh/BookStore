@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from app.models import User
+from app.models import Customer
 
 # Membership pricing
 MEMBERSHIP_PRICING = {
@@ -9,9 +9,9 @@ MEMBERSHIP_PRICING = {
     "PREMIUM": 200000,   # 200,000 Toman
 }
 
-def upgrade_membership(db: Session, user: User, membership_type: str):
+def upgrade_membership(db: Session, customer: Customer, membership_type: str):
     """
-    Upgrade users membership if they have enough balance in their wallet.
+    Upgrade customer's membership if they have enough balance in their wallet.
     """
     # Validate membership type
     if membership_type not in MEMBERSHIP_PRICING:
@@ -19,18 +19,16 @@ def upgrade_membership(db: Session, user: User, membership_type: str):
 
     membership_price = MEMBERSHIP_PRICING[membership_type]
 
-    # Check if user has enough balance
-    if user.wallet_money_amount < membership_price:
-        raise HTTPException(status_code=400, detail="Insufficient wallet balance")
+    # Check if the customer has enough balance
+    if customer.wallet_money_amount < membership_price:
+        raise HTTPException(status_code=400, detail="Not enough wallet balance")
 
-    # Deduct the money from wallet
-    user.wallet_money_amount -= membership_price
+    # Deduct the money from the wallet
+    customer.wallet_money_amount -= membership_price
 
     # Set the membership type & expiration date (30 days from now)
-    user.subscription_model = membership_type
-    user.subscription_end_time = datetime.utcnow() + timedelta(days=30)
-
+    customer.subscription_model = membership_type
+    customer.subscription_end_time = datetime.utcnow() + timedelta(days=30)
     db.commit()
-    db.refresh(user)
-
-    return user
+    db.refresh(customer)
+    return customer

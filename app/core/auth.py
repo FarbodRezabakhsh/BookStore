@@ -7,7 +7,9 @@ from typing import Optional
 from fastapi import Depends, HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
 import random
-
+from app.database import get_db
+from app.models import Customer
+from sqlalchemy.orm import Session
 
 load_dotenv()
 
@@ -61,6 +63,21 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         )
 
     return payload["sub"]
+
+
+def get_current_customer(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """
+    Retrieve the currently authenticated customer profile.
+    """
+    current_user = get_current_user(token)  # Fetch authenticated user
+
+    # Check if the user has a customer profile
+    customer = db.query(Customer).filter(Customer.user_id == current_user.id).first()
+
+    if not customer:
+        raise HTTPException(status_code=403, detail="Only customers can upgrade membership")
+
+    return customer
 
 
 def check_user_role(current_user, allowed_roles: list[str]):
