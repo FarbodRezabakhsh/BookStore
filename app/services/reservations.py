@@ -12,6 +12,7 @@ MEMBERSHIP_LIMITS = {
     "premium": {"max_days": 14, "max_books": 10, "price_per_day": 1000},
 }
 
+
 def reserve_book(db: Session, customer: Customer, reservation_data: ReservationCreate):
     """
     Handles book reservations:
@@ -27,14 +28,20 @@ def reserve_book(db: Session, customer: Customer, reservation_data: ReservationC
         raise HTTPException(status_code=404, detail="Book not found")
 
     # Enforce membership permissions
-    check_membership_permissions(customer,db)
+    check_membership_permissions(customer, db)
+
+    # Convert membership to lowercase
+    membership = customer.subscription_model.lower()
 
     # Fetch membership limits
-    membership = customer.subscription_model
-    membership_rules = MEMBERSHIP_LIMITS.get(membership)
+    membership_rules = MEMBERSHIP_LIMITS.get(membership, None)
+
+    if membership_rules is None:
+        raise HTTPException(status_code=400, detail=f"Invalid membership type: {membership}")
 
     # Ensure the user does not exceed max reservations
     active_reservations = db.query(Reservation).filter(Reservation.customer_id == customer.user_id).count()
+
     if active_reservations >= membership_rules["max_books"]:
         raise HTTPException(status_code=403, detail="You have reached your reservation limit.")
 
@@ -69,6 +76,7 @@ def reserve_book(db: Session, customer: Customer, reservation_data: ReservationC
 
         db.commit()
         db.refresh(new_reservation)
+        print("DEBUG: Reservation successful!")  # Debugging log
         return new_reservation
 
     # If book is unavailable, add to queue (Not yet implemented)

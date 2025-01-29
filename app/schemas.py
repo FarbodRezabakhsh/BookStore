@@ -82,7 +82,6 @@ class AuthorResponse(AuthorBase):
         orm_mode = True
 
 class ReservationBase(BaseModel):
-    customer_id: int
     book_id: int
     start_date: date
     end_date: date

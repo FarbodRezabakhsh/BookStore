@@ -68,8 +68,10 @@ def get_current_customer(token: str = Depends(oauth2_scheme), db: Session = Depe
     Retrieve the currently authenticated customer profile.
     """
     current_user = get_current_user(token, db)  # Fetch authenticated user
+
     # Check if the user has a customer profile
     customer = db.query(Customer).filter(Customer.user_id == current_user.id).first()
+
     if not customer:
         raise HTTPException(status_code=403, detail="Only customers can reserve books.")
     return customer
