@@ -9,6 +9,8 @@ from app.crud import (
     delete_reservation,
 )
 from app.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
+from app.core.auth import get_current_customer
+from app.services.reservations import reserve_book
 
 router = APIRouter()
 
@@ -24,8 +26,19 @@ def get_reservation_route(reservation_id: int, db: Session = Depends(get_db)):
     return reservation
 
 @router.post("/", response_model=ReservationResponse)
-def create_reservation_route(reservation: ReservationCreate, db: Session = Depends(get_db)):
-    return create_reservation(db, reservation)
+def create_reservation_route(
+    reservation_data: ReservationCreate,
+    db: Session = Depends(get_db),
+    current_customer=Depends(get_current_customer),
+):
+    """
+    Handles reservation creation.
+    - Enforces membership-based limits.
+    - Deducts money from wallet.
+    - If book is unavailable, queues the user.
+    """
+    reservation = reserve_book(db, current_customer, reservation_data)
+    return reservation
 
 @router.put("/{reservation_id}", response_model=ReservationResponse)
 def update_reservation_route(reservation_id: int, reservation: ReservationUpdate, db: Session = Depends(get_db)):
