@@ -155,3 +155,10 @@ class Login(BaseModel):
     def validate_login(self):
         if not self.username:
             raise ValueError("Username must be provided")
+
+class OTPResponse(BaseModel):
+    message: str
+
+class VerifyOTPRequest(BaseModel):
+    username: str
+    otp: str
