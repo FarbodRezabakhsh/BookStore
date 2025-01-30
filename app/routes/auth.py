@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas import SignUp, Login, Token,OTPResponse,VerifyOTPRequest
-from app.models import User
+from app.models import User,Customer
 from app.core.auth import verify_password, get_password_hash, create_access_token,save_otp,generate_otp,clear_otp,get_saved_otp
 
 router = APIRouter()
@@ -36,6 +36,17 @@ def signup(user: SignUp, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    if new_user.user_role.lower() == "customer":
+        new_customer = Customer(
+            user_id=new_user.id,
+            subscription_model="free",  # Default new customers to "free"
+            subscription_end_time=None,
+            wallet_money_amount=0.0,  # New customers start with 0 money
+        )
+        db.add(new_customer)
+        db.commit()
+        db.refresh(new_customer)
 
     # Generate an access token for the user
     access_token = create_access_token(data={"sub": new_user.username})
@@ -89,6 +100,6 @@ def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     clear_otp(request.username)
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(user)
     return {"access_token": access_token, "token_type": "bearer"}
 
