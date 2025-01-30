@@ -11,7 +11,7 @@ from app.crud import (
 )
 from app.schemas import ReservationCreate, ReservationUpdate, ReservationResponse
 from app.core.auth import get_current_customer
-from app.services.reservations import reserve_book
+from app.services.reservations import reserve_book,exit_reservation_queue
 
 router = APIRouter()
 
@@ -58,3 +58,14 @@ def delete_reservation_route(reservation_id: int, db: Session = Depends(get_db))
     if not deleted_reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     return deleted_reservation
+
+@router.delete("/queue/exit/{book_id}")
+def exit_queue_route(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_customer=Depends(get_current_customer),
+):
+    """
+    Allows a user to remove themselves from the reservation queue.
+    """
+    return exit_reservation_queue(db, current_customer, book_id)

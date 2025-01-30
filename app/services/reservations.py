@@ -138,3 +138,19 @@ def return_book(db: Session, reservation_id: int):
 
     # Check if someone is waiting in the queue
     process_reservation_queue(db, book.id)
+
+def exit_reservation_queue(db: Session, customer: Customer, book_id: int):
+    """
+    Allows a user to exit the reservation queue for a specific book.
+    """
+    queue_entry = db.query(ReservationQueue).filter(
+        ReservationQueue.customer_id == customer.id,
+        ReservationQueue.book_id == book_id
+    ).first()
+
+    if not queue_entry:
+        raise HTTPException(status_code=404, detail="You are not in the queue for this book.")
+    db.delete(queue_entry)
+    db.commit()
+    return {"message": "You have successfully exited the reservation queue."}
+
