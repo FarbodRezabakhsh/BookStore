@@ -100,6 +100,6 @@ def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     clear_otp(request.username)
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(user)
     return {"access_token": access_token, "token_type": "bearer"}
 

@@ -27,12 +27,16 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
+def create_access_token(user: User, expires_delta: Optional[timedelta] = None):
+    """
+    Generates an access token with user ID instead of username.
+    """
+    to_encode = {"sub": str(user.id)}  # Store user ID instead of username
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def decode_access_token(token: str):
     try:
@@ -42,25 +46,28 @@ def decode_access_token(token: str):
         return None
 
 
-def get_current_user(token: str = Depends(oauth2_scheme),db: Session = Depends(get_db)):
-    """
-    Validates the token and retrieves the current User object.
-    """
-    try:
-        # Decode JWT token
-        payload = decode_access_token(token)
-        username = payload.get("sub")
-        if not username:
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    payload = decode_access_token(token)
+    user_id = payload.get("sub")
 
-        # Retrieve the full User object from the database
-        user = db.query(User).filter(User.username == username).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-
-        return user
-    except JWTError:
+    if not user_id:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    try:
+        user_id = int(user_id)  # Convert to integer
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token format")
+
+    # Check if token is revoked
+    if user_id in revoked_tokens:
+        raise HTTPException(status_code=401, detail="User access revoked. Please log in again.")
+
+    # Retrieve the User object from the database
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return user
 
 
 def get_current_customer(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -78,11 +85,18 @@ def get_current_customer(token: str = Depends(oauth2_scheme), db: Session = Depe
 
 
 def check_user_role(current_user, allowed_roles: list[str]):
-    if current_user.user_role not in allowed_roles:
+    user_role = current_user.user_role.lower()  # Convert user role to lowercase
+    allowed_roles = [role.lower() for role in allowed_roles]  # Convert allowed roles to lowercase
+
+    print(f"DEBUG: Checking role for user {current_user.username}, Role: {user_role}")
+    print(f"DEBUG: Allowed roles: {allowed_roles}")
+
+    if user_role not in allowed_roles:  # Compare lowercase role names
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have the required permissions to perform this action.",
         )
+
 
 def generate_otp():
     return str(random.randint(100000,999999))
@@ -99,3 +113,5 @@ def get_saved_otp(username: str):
 def clear_otp(username: str):
     if username in otp_store:
         del otp_store[username]
+
+revoked_tokens = set()
