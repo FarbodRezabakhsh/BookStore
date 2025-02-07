@@ -88,9 +88,6 @@ def check_user_role(current_user, allowed_roles: list[str]):
     user_role = current_user.user_role.lower()  # Convert user role to lowercase
     allowed_roles = [role.lower() for role in allowed_roles]  # Convert allowed roles to lowercase
 
-    print(f"DEBUG: Checking role for user {current_user.username}, Role: {user_role}")
-    print(f"DEBUG: Allowed roles: {allowed_roles}")
-
     if user_role not in allowed_roles:  # Compare lowercase role names
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
