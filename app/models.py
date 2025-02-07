@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer, String, Enum , Float,ForeignKey,Table,Date
+from sqlalchemy import Column, Integer, String, Float,ForeignKey,Table,DateTime,BigInteger
 from app.database import Base
 from sqlalchemy.orm import relationship
-import enum
+from enum import Enum
 from datetime import datetime
 
-class UserRole(enum.Enum):
+class UserRole(Enum):
     ADMIN = "admin"
     CUSTOMER = "customer"
     AUTHOR = "author"
@@ -21,7 +21,7 @@ class User(Base):
     password = Column(String, nullable=False)
     user_role = Column(String, default=UserRole.CUSTOMER.value,nullable=False)
 
-    author_profile = relationship("Author", back_populates="user", uselist=False)
+    author_profile = relationship("Author", back_populates="user")
     customer_profile = relationship("Customer", back_populates="user", uselist=False)
 
 class Genre(Base):
@@ -80,7 +80,7 @@ class Reservation(Base):
     customer = relationship("User")
     book = relationship("Book")
 
-class SubscriptionModel(enum.Enum):
+class SubscriptionModel(Enum):
     FREE = "free"
     PLUS = "plus"
     PREMIUM = "premium"
@@ -92,7 +92,7 @@ class Customer(Base):
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
     subscription_model = Column(String, nullable=False, default=SubscriptionModel.FREE.value)
     subscription_end_time = Column(Date, nullable=True)
-    wallet_money_amount = Column(Float, nullable=False, default=0.0)
+    wallet_money_amount = Column(Integer, nullable=False, default=0.0)
 
     user = relationship("User", back_populates="customer_profile")
 
@@ -103,7 +103,7 @@ class ReservationQueue(Base):
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
-    created_at = Column(Date, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     customer = relationship("Customer")
     book = relationship("Book")
