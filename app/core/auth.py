@@ -13,19 +13,26 @@ from sqlalchemy.orm import Session
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiration time
-
-
+# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# OAuth2 authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+# ----------------------------------------
+# Password Handling Functions
+# ----------------------------------------
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+
+# ----------------------------------------
+# Token Handling Functions
+# ----------------------------------------
 
 def create_access_token(user: User, expires_delta: Optional[timedelta] = None):
     """
@@ -45,6 +52,10 @@ def decode_access_token(token: str):
     except JWTError:
         return None
 
+
+# ----------------------------------------
+# User Authentication & Authorization
+# ----------------------------------------
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     payload = decode_access_token(token)
@@ -88,9 +99,6 @@ def check_user_role(current_user, allowed_roles: list[str]):
     user_role = current_user.user_role.lower()  # Convert user role to lowercase
     allowed_roles = [role.lower() for role in allowed_roles]  # Convert allowed roles to lowercase
 
-    print(f"DEBUG: Checking role for user {current_user.username}, Role: {user_role}")
-    print(f"DEBUG: Allowed roles: {allowed_roles}")
-
     if user_role not in allowed_roles:  # Compare lowercase role names
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -98,9 +106,14 @@ def check_user_role(current_user, allowed_roles: list[str]):
         )
 
 
+# ----------------------------------------
+# OTP Handling
+# ----------------------------------------
+
 def generate_otp():
     return str(random.randint(100000,999999))
 
+# OTP Storage
 otp_store = {}
 
 def save_otp(username: str, otp: str):
@@ -114,4 +127,6 @@ def clear_otp(username: str):
     if username in otp_store:
         del otp_store[username]
 
+
+# Token Revocation Storage (Consider storing in DB or Redis for persistence)
 revoked_tokens = set()
